@@ -14,9 +14,7 @@ class SnakeGame(BaseGame):
     
     
     def __init__(self, board_size: int = 20, initial_length: int = 3, food_count: int = 5):
-        self.board_size = board_size
-        self.initial_length = initial_length
-        self.food_count = food_count
+
 
         game_config = {
             'board_size': board_size,
@@ -25,6 +23,10 @@ class SnakeGame(BaseGame):
             'timeout': config.GAME_CONFIGS['snake']['timeout'],
             'max_moves': config.GAME_CONFIGS['snake']['max_moves']
         }
+
+        self.board_size = board_size
+        self.initial_length = initial_length
+        self.food_count = food_count
         
         super().__init__(game_config)
       

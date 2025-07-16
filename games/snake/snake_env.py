@@ -24,7 +24,7 @@ class SnakeEnv(BaseEnv):
 
     def _get_observation(self):
         """获取观察"""
-        return self.game.board.copy()
+        return self.game.get_state()['board'].copy()
 
     def _get_action_mask(self):
         """获取动作掩码"""
