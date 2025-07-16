@@ -13,6 +13,11 @@ class SnakeGame(BaseGame):
     """双人贪吃蛇游戏"""
     
     def __init__(self, board_size: int = 20, initial_length: int = 3, food_count: int = 5):
+        
+        self.board_size = board_size
+        self.initial_length = initial_length
+        self.food_count = food_count
+
         game_config = {
             'board_size': board_size,
             'initial_length': initial_length,
@@ -20,11 +25,10 @@ class SnakeGame(BaseGame):
             'timeout': config.GAME_CONFIGS['snake']['timeout'],
             'max_moves': config.GAME_CONFIGS['snake']['max_moves']
         }
+        
         super().__init__(game_config)
         
-        self.board_size = board_size
-        self.initial_length = initial_length
-        self.food_count = food_count
+        
         
         # 蛇的位置和方向
         self.snake1 = []  # 玩家1的蛇
