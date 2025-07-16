@@ -195,7 +195,13 @@ class SnakeGUI:
             pygame.K_d: (0, 1)
         }
         if key in key_to_action:
-            self.human_direction = key_to_action[key]
+            new_dir = key_to_action[key]
+            cur_dir = self.env.game.direction1
+            # 禁止直接反向
+            if (new_dir[0] == -cur_dir[0] and new_dir[1] == -cur_dir[1]):
+                # 可以加提示音或闪烁提示
+                return
+            self.human_direction = new_dir
             self.env.game.direction1 = self.human_direction  # 同步方向
     def _make_move(self, action):
         """执行移动"""
@@ -246,7 +252,7 @@ class SnakeGUI:
                 
                 if action:
                     self._make_move(action)
-                    
+
                 self.thinking = False
                 
             except Exception as e:
