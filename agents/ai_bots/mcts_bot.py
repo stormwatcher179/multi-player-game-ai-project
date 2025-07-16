@@ -68,66 +68,71 @@ class MCTSBot(BaseAgent):
     
     def get_action(self, observation: Any, env: Any) -> Any:
         """
-        使用MCTS选择动作
-        
-        Args:
-            observation: 当前观察
-            env: 环境对象
-            
-        Returns:
-            选择的动作
+        使用MCTS选择动作（完整树结构版）
         """
-        start_time = time.time()
-        
-        # 获取有效动作
-        valid_actions = env.get_valid_actions()
-        
-        if not valid_actions:
+        root = MCTSNode(env.game.clone())
+        for _ in range(self.simulation_count):
+            node = self._select(root)
+            if not node.is_terminal() and not node.is_fully_expanded():
+                node = self._expand(node)
+            result = self._simulate(node)
+            self._backpropagate(node, result)
+        # 选择访问次数最多的子节点的动作
+        if not root.children:
             return None
-        
-        best_action = valid_actions[0]
+        best_child = max(root.children, key=lambda c: c.visits)
+        return best_child.action
+
+    def _select(self, node):
+        while not node.is_terminal() and node.is_fully_expanded() and node.children:
+            node = self._uct_select(node)
+        return node
+
+    def _uct_select(self, node):
+        C = 1.41
         best_score = -float('inf')
-        
-        simulations_per_action = max(1, self.simulation_count // len(valid_actions))
-        
-        for action in valid_actions:
-            score = 0
-            for _ in range(simulations_per_action):
-                score += self.simulate(env.game.clone(), action)
-            avg_score = score / simulations_per_action
-            
-            if avg_score > best_score:
-                best_score = avg_score
-                best_action = action
-        
-        # 更新统计
-        move_time = time.time() - start_time
-        self.total_moves += 1
-        self.total_time += move_time
-        
-        return best_action
-    
-    def simulate(self, game, first_action):
-        # 执行第一个动作
-        game.step(first_action)
-        
-        # 随机模拟到游戏结束
-        while not game.is_terminal():
-            valid_actions = game.get_valid_actions()
-            if not valid_actions:
+        best_child = None
+        for child in node.children:
+            if child.visits == 0:
+                uct = float('inf')
+            else:
+                uct = (child.value / child.visits +
+                       C * math.sqrt(math.log(node.visits + 1) / child.visits))
+            if uct > best_score:
+                best_score = uct
+                best_child = child
+        return best_child
+
+    def _expand(self, node):
+        action = node.untried_actions.pop()
+        next_state = node.state.clone()
+        next_state.step(action)
+        child = MCTSNode(next_state, parent=node, action=action)
+        node.children.append(child)
+        return child
+
+    def _simulate(self, node):
+        state = node.state.clone()
+        while not state.is_terminal():
+            actions = state.get_valid_actions()
+            if not actions:
                 break
-            action = random.choice(valid_actions)
-            game.step(action)
-        
-        # 返回结果评分
-        winner = game.get_winner()
+            action = random.choice(actions)
+            state.step(action)
+        winner = state.get_winner()
         if winner == self.player_id:
             return 1
         elif winner is not None:
             return -1
         else:
             return 0
-    
+
+    def _backpropagate(self, node, result):
+        while node is not None:
+            node.visits += 1
+            node.value += result
+            node = node.parent
+
     def reset(self):
         """重置MCTS Bot"""
         super().reset()
@@ -137,7 +142,7 @@ class MCTSBot(BaseAgent):
         info = super().get_info()
         info.update({
             'type': 'MCTS',
-            'description': '使用蒙特卡洛树搜索的Bot',
+            'description': '使用完整蒙特卡洛树搜索的Bot',
             'strategy': f'MCTS with {self.simulation_count} simulations',
             'timeout': self.timeout
         })
