@@ -63,6 +63,8 @@ class MultiGameGUI:
         self.thinking = False
         self.selected_ai = "RandomBot"
         self.paused = False
+        self.snake_move_interval = 0.3  # 蛇每0.3秒移动一次，速度更慢
+        self.last_snake_move = time.time()
 
         # UI元素
         self.buttons = self._create_buttons()
@@ -170,11 +172,16 @@ class MultiGameGUI:
         elif game_type == "snake":
             self.env = SnakeEnv(board_size=20)
             self.cell_size = 25
-            self.update_interval = 0.3  # 贪吃蛇需要频繁更新
+            self.update_interval = 0.04  # 贪吃蛇输入响应更快
 
         self.human_agent = HumanAgent(name="Human Player", player_id=1)
         self._create_ai_agent()
         self.reset_game()
+        if self.current_game == "snake":
+            self.current_agent = self.human_agent
+            self.thinking = False
+            self.human_direction = (0, 1)
+            self.env.game.direction1 = self.human_direction
 
     def _create_ai_agent(self):
         """创建AI智能体"""
@@ -188,7 +195,7 @@ class MultiGameGUI:
         elif self.selected_ai == "MCTSBot":
             if self.current_game == "gomoku":
                 self.ai_agent = MCTSBot(
-                    name="MCTS AI", player_id=2, simulation_count=300
+                    name="MCTS AI", player_id=2, simulation_count=1000, timeout=4
                 )
             else:
                 self.ai_agent = SmartSnakeAI(name="Smart Snake AI", player_id=2)
@@ -204,6 +211,11 @@ class MultiGameGUI:
         self.last_update = time.time()
         self.paused = False
         self.buttons["pause"]["text"] = "Pause"
+        if self.current_game == "snake":
+            self.current_agent = self.human_agent
+            self.thinking = False
+            self.human_direction = (0, 1)
+            self.env.game.direction1 = self.human_direction
 
     def handle_events(self) -> bool:
         """处理事件"""
@@ -251,19 +263,21 @@ class MultiGameGUI:
             if button_info["rect"].collidepoint(mouse_pos):
                 if button_name == "new_game":
                     self.reset_game()
+                    return True
                 elif button_name == "quit":
                     return None
                 elif button_name == "pause":
                     self.paused = not self.paused
                     self.buttons["pause"]["text"] = "Resume" if self.paused else "Pause"
+                    return False  # 不要触发reset_game
                 elif button_name in ["gomoku_game", "snake_game"]:
                     game_type = button_name.split("_")[0]
                     self._switch_game(game_type)
+                    return True
                 elif button_name.endswith("_ai"):
-                    # 更新选中的AI
-                    old_ai = f"{self.selected_ai.lower()}_ai"
-                    if old_ai in self.buttons:
-                        self.buttons[old_ai]["color"] = COLORS["LIGHT_GRAY"]
+                    for ai_btn in ["random_ai", "minimax_ai", "mcts_ai"]:
+                        if ai_btn in self.buttons:
+                            self.buttons[ai_btn]["color"] = COLORS["LIGHT_GRAY"]
 
                     if button_name == "random_ai":
                         self.selected_ai = "RandomBot"
@@ -275,8 +289,7 @@ class MultiGameGUI:
                     self.buttons[button_name]["color"] = COLORS["YELLOW"]
                     self._create_ai_agent()
                     self.reset_game()
-
-                return True
+                    return True
         return False
 
     def _handle_gomoku_click(self, mouse_pos: Tuple[int, int]):
@@ -311,6 +324,11 @@ class MultiGameGUI:
 
         if key in key_to_action:
             action = key_to_action[key]
+            cur_dir = getattr(self, 'human_direction', (0, 1))
+            if (action[0] == -cur_dir[0] and action[1] == -cur_dir[1]):
+                return
+            self.human_direction = action
+            self.env.game.direction1 = self.human_direction
             self._make_move(action)
 
     def _make_move(self, action):
@@ -355,6 +373,29 @@ class MultiGameGUI:
 
         self.last_update = current_time
 
+        # 分离蛇的移动频率和输入响应
+        if self.current_game == "snake":
+            # AI回合
+            if not isinstance(self.current_agent, HumanAgent) and self.thinking:
+                try:
+                    observation = self.env._get_observation()
+                    action = self.current_agent.get_action(observation, self.env)
+                    if action:
+                        self._make_move(action)
+                    self.thinking = False
+                except Exception as e:
+                    print(f"AI thinking failed: {e}")
+                    self.thinking = False
+            # 人类玩家回合
+            elif isinstance(self.current_agent, HumanAgent) and not self.thinking:
+                # 只有到达snake_move_interval时才推进蛇
+                if current_time - self.last_snake_move >= self.snake_move_interval:
+                    self.last_snake_move = current_time
+                    action = self.human_direction
+                    self._make_move(action)
+            return
+
+        # 其它游戏（如五子棋）
         # AI回合
         if not isinstance(self.current_agent, HumanAgent) and self.thinking:
             try:

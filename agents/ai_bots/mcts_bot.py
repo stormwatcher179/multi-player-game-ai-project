@@ -57,23 +57,27 @@ class MCTSBot(BaseAgent):
     """MCTS Bot"""
     
     def __init__(self, name: str = "MCTSBot", player_id: int = 1, 
-                 simulation_count: int = 100, ucb_c: float = 1.41, simulation_policy=None):
+                 simulation_count: int = 100, ucb_c: float = 1.41, simulation_policy=None, timeout: float = 10):
         super().__init__(name, player_id)
         self.simulation_count = simulation_count
         # UCB1参数C可配置
         ai_config = config.AI_CONFIGS.get('mcts', {})
         self.simulation_count = ai_config.get('simulation_count', simulation_count)
-        self.timeout = ai_config.get('timeout', 10)
+        self.timeout = ai_config.get('timeout', timeout)
         self.ucb_c = ai_config.get('ucb_c', ucb_c)
         # 随机模拟策略可自定义
         self.simulation_policy = simulation_policy or self._default_simulation_policy
 
     def get_action(self, observation: Any, env: Any) -> Any:
         """
-        使用MCTS选择动作（完整树结构版）
+        使用MCTS选择动作（完整树结构版），支持超时自动停止
         """
+        import time
         root = MCTSNode(env.game.clone())
+        start_time = time.time()
         for _ in range(self.simulation_count):
+            if time.time() - start_time > self.timeout:
+                break
             node = self._select(root)
             if not node.is_terminal() and not node.is_fully_expanded():
                 node = self._expand(node)
