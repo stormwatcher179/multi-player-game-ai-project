@@ -84,9 +84,7 @@ class SnakeGame(BaseGame):
             info: 额外信息
         """
         # 更新方向
-        if self.current_player == 1:
-            self.direction1 = action
-        else:
+        if self.current_player == 2:
             self.direction2 = action
         
         # 移动蛇
@@ -113,6 +111,9 @@ class SnakeGame(BaseGame):
             'alive2': self.alive2
         }
         
+         # 切换玩家
+        if self.alive1 and self.alive2:
+            self.current_player = 2 if self.current_player == 1 else 1
         return observation, reward, done, info
     
     def get_valid_actions(self, player: int = None) -> List[Tuple[int, int]]:

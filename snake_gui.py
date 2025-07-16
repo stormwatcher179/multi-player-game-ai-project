@@ -59,13 +59,15 @@ class SnakeGUI:
         self.thinking = False
         self.selected_ai = "SnakeAI"
         self.paused = False
-        
+        self.human_direction = (0, 1)  # 初始向右
+        self.env.game.direction1 = self.human_direction
         # UI元素
         self.buttons = self._create_buttons()
         
         # 游戏计时
         self.last_update = time.time()
         self.update_interval = 0.3  # 300ms更新一次
+
         
         self.reset_game()
     
@@ -132,6 +134,8 @@ class SnakeGUI:
         self.last_update = time.time()
         self.paused = False
         self.buttons['pause']['text'] = 'Pause'
+        self.human_direction = (0, 1)  # 重置方向
+        self.env.game.direction1 = self.human_direction  # 同步方向
     
     def handle_events(self) -> bool:
         """处理事件"""
@@ -140,9 +144,7 @@ class SnakeGUI:
                 return False
             
             elif event.type == pygame.KEYDOWN:
-                # 处理贪吃蛇的键盘输入
-                if (isinstance(self.current_agent, HumanAgent) and 
-                    not self.game_over and not self.thinking and not self.paused):
+                if not self.game_over and not self.paused:
                     self._handle_snake_input(event.key)
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -192,11 +194,9 @@ class SnakeGUI:
             pygame.K_RIGHT: (0, 1),  # 右
             pygame.K_d: (0, 1)
         }
-        
         if key in key_to_action:
-            action = key_to_action[key]
-            self._make_move(action)
-    
+            self.human_direction = key_to_action[key]
+            self.env.game.direction1 = self.human_direction  # 同步方向
     def _make_move(self, action):
         """执行移动"""
         if self.game_over or self.paused:
@@ -246,26 +246,18 @@ class SnakeGUI:
                 
                 if action:
                     self._make_move(action)
-                
+                    
                 self.thinking = False
                 
             except Exception as e:
                 print(f"AI thinking failed: {e}")
                 self.thinking = False
-    """
-        # 人类玩家回合 - 贪吃蛇需要持续移动
+    
+        # 人类玩家回合 - 自动前进
         elif isinstance(self.current_agent, HumanAgent) and not self.thinking:
-            # 获取当前方向并继续移动
-            current_direction = None
-            if self.env.game.current_player == 1:
-                current_direction = self.env.game.direction1
-            else:
-                current_direction = self.env.game.direction2
-            
-            # 直接使用当前方向
-            action = current_direction
+            action = self.env.game.direction1
             self._make_move(action)
-    """
+        
     def draw(self):
         """绘制游戏界面"""
         # 清空屏幕
