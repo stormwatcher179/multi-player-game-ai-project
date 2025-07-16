@@ -87,3 +87,14 @@ class SnakeEnv(BaseEnv):
         cloned_env = SnakeEnv(self.board_size)
         cloned_env.game = cloned_game
         return cloned_env 
+    
+    def step(self, action):
+        observation, reward, done, info = self.game.step(action)
+        terminated = done  # 只要有一方死亡就为True
+        truncated = False  # 你没有超时/截断逻辑
+        return observation, reward, terminated, truncated, info
+    
+    def reset(self):
+        observation = self.game.reset()
+        info = {}  # 可选，补充信息
+        return observation, info

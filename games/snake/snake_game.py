@@ -135,8 +135,8 @@ class SnakeGame(BaseGame):
         return valid_directions
     
     def is_terminal(self) -> bool:
-        """检查游戏是否结束"""
-        return not (self.alive1 or self.alive2)
+        """只要有一方死亡就结束"""
+        return not self.alive1 or not self.alive2
     
     def get_winner(self) -> Optional[int]:
         """获取获胜者"""
@@ -285,8 +285,8 @@ class SnakeGame(BaseGame):
                 self.foods.append(pos)
     
     def _check_game_over(self) -> bool:
-        """检查游戏是否结束"""
-        return not (self.alive1 or self.alive2)
+        """只要有一方死亡就结束"""
+        return not self.alive1 or not self.alive2
     
     def _calculate_reward(self) -> float:
         """计算奖励"""
