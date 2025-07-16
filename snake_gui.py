@@ -252,7 +252,7 @@ class SnakeGUI:
             except Exception as e:
                 print(f"AI thinking failed: {e}")
                 self.thinking = False
-        
+    """
         # 人类玩家回合 - 贪吃蛇需要持续移动
         elif isinstance(self.current_agent, HumanAgent) and not self.thinking:
             # 获取当前方向并继续移动
@@ -265,7 +265,7 @@ class SnakeGUI:
             # 直接使用当前方向
             action = current_direction
             self._make_move(action)
-    
+    """
     def draw(self):
         """绘制游戏界面"""
         # 清空屏幕
