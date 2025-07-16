@@ -15,6 +15,10 @@ class BaseAgent(ABC):
         self.total_moves = 0
         self.total_time = 0.0
 
+    def update_stats(self, result, game_idx):
+        # 可选：统计胜负平等信息
+        pass
+    
     @abstractmethod
     def get_action(self, observation, env):
         pass
