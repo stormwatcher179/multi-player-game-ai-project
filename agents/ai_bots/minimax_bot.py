@@ -20,7 +20,7 @@ class MinimaxBot(BaseAgent):
             # 执行动作
             game_copy.step(action)
             # 计算分数
-            score = self.minimax(game_copy, self.max_depth - 1, False)
+            score = self.minimax(game_copy, self.max_depth - 1, False, float('-inf'), float('inf'))
             
             if score > best_score:
                 best_score = score
@@ -28,7 +28,7 @@ class MinimaxBot(BaseAgent):
                 
         return best_action
 
-    def minimax(self, game, depth, maximizing):
+    def minimax(self, game, depth, maximizing, alpha, beta):
         if depth == 0 or game.is_terminal():
             winner = game.get_winner()
             if winner == self.player_id:
@@ -47,14 +47,20 @@ class MinimaxBot(BaseAgent):
             for action in valid_actions:
                 game_copy = game.clone()
                 game_copy.step(action)
-                score = self.minimax(game_copy, depth - 1, False)
+                score = self.minimax(game_copy, depth - 1, False, alpha, beta)
                 max_score = max(max_score, score)
+                alpha = max(alpha, score)
+                if beta <= alpha:
+                    break  # beta剪枝
             return max_score
         else:
             min_score = float('inf')
             for action in valid_actions:
                 game_copy = game.clone()
                 game_copy.step(action)
-                score = self.minimax(game_copy, depth - 1, True)
+                score = self.minimax(game_copy, depth - 1, True, alpha, beta)
                 min_score = min(min_score, score)
+                beta = min(beta, score)
+                if beta <= alpha:
+                    break  # alpha剪枝
             return min_score 
