@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pygame
 from games.pong import PongEnv
+# 删除AI导入
 
 # 自动下载音效
 sound_url = "https://cdn.jsdelivr.net/gh/AI-Resource/pong-assets/pong.wav"
@@ -59,10 +60,17 @@ BTN_PAUSE_COLOR = (255, 204, 0)     # 橙黄色
 BTN_RESUME_COLOR = (0, 204, 102)    # 绿色
 BTN_QUIT_COLOR = (255, 102, 102)    # 红色
 
-# 按钮
-btn_new = Button((env.game.width+30, 50, 160, 40), "New Game", default_font, BTN_NEW_COLOR, (0,0,0))
-btn_pause = Button((env.game.width+30, 110, 160, 40), "Pause", default_font, BTN_PAUSE_COLOR, (0,0,0))
-btn_quit = Button((env.game.width+30, 170, 160, 40), "Quit", default_font, BTN_QUIT_COLOR, (0,0,0))
+# 按钮实例化
+btn_new = Button(rect=(WIDTH-200, 60, 180, 50), text="New Game", font=default_font, color=BTN_NEW_COLOR, text_color=(0,0,0))
+btn_pause = Button(rect=(WIDTH-200, 130, 180, 50), text="Pause", font=default_font, color=BTN_PAUSE_COLOR, text_color=(0,0,0))
+btn_quit = Button(rect=(WIDTH-200, 200, 180, 50), text="Quit", font=default_font, color=BTN_QUIT_COLOR, text_color=(0,0,0))
+# 删除模式选择按钮
+
+# 模式变量
+# MODE_HUMAN = "human"
+# MODE_AI = "ai"
+# game_mode = MODE_HUMAN  # 默认双人
+# ai_agent = SearchBot(player_id=2)
 
 paused = False
 game_over = False
@@ -76,24 +84,20 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit(0)
-
-    mouse_pos = pygame.mouse.get_pos()
-    mouse_pressed = pygame.mouse.get_pressed()
-
-    # 按钮点击
-    if btn_new.is_clicked(mouse_pos, mouse_pressed):
-        state = env.reset()
-        paused = False
-        game_over = False
-        winner = None
-        score_pause = 0
-    if btn_pause.is_clicked(mouse_pos, mouse_pressed):
-        if not game_over:
-            paused = not paused
-    if btn_quit.is_clicked(mouse_pos, mouse_pressed):
-        pygame.quit()
-        sys.exit(0)
-
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = event.pos
+            if btn_new.rect.collidepoint(mouse_pos):
+                state = env.reset()
+                paused = False
+                game_over = False
+                winner = None
+                score_pause = 0
+            if btn_pause.rect.collidepoint(mouse_pos):
+                if not game_over:
+                    paused = not paused
+            if btn_quit.rect.collidepoint(mouse_pos):
+                pygame.quit()
+                sys.exit(0)
     # 玩家输入
     keys = pygame.key.get_pressed()
     action1 = 0
@@ -106,6 +110,7 @@ while True:
         action1_x = -1
     elif keys[pygame.K_d]:
         action1_x = 1
+    # 玩家2输入（始终为键盘控制）
     action2 = 0
     if keys[pygame.K_UP]:
         action2 = -1
@@ -169,11 +174,13 @@ while True:
         btn_pause.color = BTN_PAUSE_COLOR
     btn_pause.draw(screen)
     btn_quit.draw(screen)
+    # 删除模式选择按钮高亮
 
     # 规则简述
     rule_font = pygame.font.SysFont(None, 24)
     rules = [
         "规则简述：",
+        "当前模式: 双人对战",
         "1. 玩家1: W/S控制上下",
         "2. 玩家2: ↑/↓控制上下",
         "3. 球碰到对方边界得分",
