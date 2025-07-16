@@ -449,7 +449,7 @@ class MultiGameGUI:
             pygame.draw.circle(self.screen, COLORS["BLACK"], center, 4)
 
         # 绘制棋子
-        board = self.env.game.board
+        board = self.env.game.get_state()['board']
         for row in range(board_size):
             for col in range(board_size):
                 if board[row, col] != 0:
@@ -517,7 +517,7 @@ class MultiGameGUI:
             )
 
         # 绘制游戏元素
-        board = self.env.game.board
+        board = self.env.game.get_state()['board']
         for row in range(board_size):
             for col in range(board_size):
                 if board[row, col] != 0:

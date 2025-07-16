@@ -10,7 +10,9 @@ from ..base_agent import BaseAgent
 
 class HumanAgent(BaseAgent):
     """人类智能体"""
-    
+    def update_stats(self, *args, **kwargs):
+        pass
+
     def __init__(self, name: str = "Human", player_id: int = 1):
         super().__init__(name, player_id)
     
