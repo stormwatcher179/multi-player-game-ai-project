@@ -10,7 +10,7 @@ import os
 from typing import Optional, Tuple, Dict, Any
 from games.gomoku import GomokuGame, GomokuEnv
 from games.snake import SnakeGame, SnakeEnv
-from agents import RandomBot, MinimaxBot, MCTSBot, HumanAgent, SnakeAI, SmartSnakeAI
+from agents import RandomBot, MinimaxBot, MCTSBot, HumanAgent, SnakeAI, SmartSnakeAI, RuleBasedGomokuBot
 import config
 
 # 颜色定义
@@ -106,6 +106,10 @@ class MultiGameGUI:
         button_width = 120
         button_height = 30
         start_x = 650
+        ai_start_y = 120 + 57  # AI按钮整体下移1.5cm
+        ai_gap = 40
+        ctrl_start_y = ai_start_y + 4 * ai_gap + 40 + 38  # 控制按钮整体下移1cm
+        ctrl_gap = 40
 
         buttons = {
             # 游戏选择
@@ -121,33 +125,38 @@ class MultiGameGUI:
             },
             # AI选择
             "random_ai": {
-                "rect": pygame.Rect(start_x, 150, button_width, button_height),
+                "rect": pygame.Rect(start_x, ai_start_y, button_width, button_height),
                 "text": "Random AI",
                 "color": COLORS["YELLOW"],
             },
             "minimax_ai": {
-                "rect": pygame.Rect(start_x, 190, button_width, button_height),
+                "rect": pygame.Rect(start_x, ai_start_y + ai_gap, button_width, button_height),
                 "text": "Minimax AI",
                 "color": COLORS["LIGHT_GRAY"],
             },
             "mcts_ai": {
-                "rect": pygame.Rect(start_x, 230, button_width, button_height),
+                "rect": pygame.Rect(start_x, ai_start_y + 2 * ai_gap, button_width, button_height),
                 "text": "MCTS AI",
+                "color": COLORS["LIGHT_GRAY"],
+            },
+            "rule_based_gomoku_ai": {
+                "rect": pygame.Rect(start_x, ai_start_y + 3 * ai_gap, button_width, button_height),
+                "text": "RuleBased AI",
                 "color": COLORS["LIGHT_GRAY"],
             },
             # 控制按钮
             "new_game": {
-                "rect": pygame.Rect(start_x, 290, button_width, button_height),
+                "rect": pygame.Rect(start_x, ctrl_start_y, button_width, button_height),
                 "text": "New Game",
                 "color": COLORS["GREEN"],
             },
             "pause": {
-                "rect": pygame.Rect(start_x, 330, button_width, button_height),
+                "rect": pygame.Rect(start_x, ctrl_start_y + ctrl_gap, button_width, button_height),
                 "text": "Pause",
                 "color": COLORS["ORANGE"],
             },
             "quit": {
-                "rect": pygame.Rect(start_x, 370, button_width, button_height),
+                "rect": pygame.Rect(start_x, ctrl_start_y + 2 * ctrl_gap, button_width, button_height),
                 "text": "Quit",
                 "color": COLORS["RED"],
             },
@@ -199,6 +208,8 @@ class MultiGameGUI:
                 )
             else:
                 self.ai_agent = SmartSnakeAI(name="Smart Snake AI", player_id=2)
+        elif self.selected_ai == "RuleBasedGomokuBot":
+            self.ai_agent = RuleBasedGomokuBot(name="RuleBased AI", player_id=2)
 
     def reset_game(self):
         """重置游戏"""
@@ -275,7 +286,7 @@ class MultiGameGUI:
                     self._switch_game(game_type)
                     return True
                 elif button_name.endswith("_ai"):
-                    for ai_btn in ["random_ai", "minimax_ai", "mcts_ai"]:
+                    for ai_btn in ["random_ai", "minimax_ai", "mcts_ai", "rule_based_gomoku_ai"]:
                         if ai_btn in self.buttons:
                             self.buttons[ai_btn]["color"] = COLORS["LIGHT_GRAY"]
 
@@ -285,6 +296,8 @@ class MultiGameGUI:
                         self.selected_ai = "MinimaxBot"
                     elif button_name == "mcts_ai":
                         self.selected_ai = "MCTSBot"
+                    elif button_name == "rule_based_gomoku_ai":
+                        self.selected_ai = "RuleBasedGomokuBot"
 
                     self.buttons[button_name]["color"] = COLORS["YELLOW"]
                     self._create_ai_agent()
@@ -612,7 +625,7 @@ class MultiGameGUI:
                 "• Avoid collision",
             ]
 
-        start_y = 420
+        start_y = 420 + 113  # 规则说明整体下移3cm
         for i, instruction in enumerate(instructions):
             text = self.font_small.render(instruction, True, COLORS["DARK_GRAY"])
             self.screen.blit(

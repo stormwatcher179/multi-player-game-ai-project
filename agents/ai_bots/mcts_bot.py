@@ -134,12 +134,61 @@ class MCTSBot(BaseAgent):
 
     def _default_simulation_policy(self, node, player_id):
         state = node.state.clone()
+        board = state.board
+        board_size = board.shape[0]
+        def forms_n_in_a_row(board, move, player, n):
+            row, col = move
+            if board[row, col] != 0:
+                return False
+            directions = [(1,0),(0,1),(1,1),(1,-1)]
+            for dx, dy in directions:
+                count = 1
+                for d in [1, -1]:
+                    for k in range(1, n):
+                        x = row + dx * k * d
+                        y = col + dy * k * d
+                        if 0 <= x < board_size and 0 <= y < board_size and board[x, y] == player:
+                            count += 1
+                        else:
+                            break
+                if count >= n:
+                    return True
+            return False
         while not state.is_terminal():
             actions = state.get_valid_actions()
             if not actions:
                 break
-            action = random.choice(actions)
-            state.step(action)
+            # 1. 自己五连
+            for move in actions:
+                if forms_n_in_a_row(state.board, move, player_id, 5):
+                    state.step(move)
+                    break
+            else:
+                # 2. 对手五连
+                opponent = 2 if player_id == 1 else 1
+                for move in actions:
+                    if forms_n_in_a_row(state.board, move, opponent, 5):
+                        state.step(move)
+                        break
+                else:
+                    # 3. 自己四连
+                    for move in actions:
+                        if forms_n_in_a_row(state.board, move, player_id, 4):
+                            state.step(move)
+                            break
+                    else:
+                        # 4. 对手四连
+                        for move in actions:
+                            if forms_n_in_a_row(state.board, move, opponent, 4):
+                                state.step(move)
+                                break
+                        else:
+                            # 5. 中心优先
+                            center = (board_size // 2, board_size // 2)
+                            if center in actions:
+                                state.step(center)
+                            else:
+                                state.step(random.choice(actions))
         winner = state.get_winner()
         if winner == player_id:
             return 1

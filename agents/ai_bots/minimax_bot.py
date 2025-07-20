@@ -77,10 +77,52 @@ class MinimaxBot(BaseAgent):
             return min_score
 
     def evaluate(self, game):
-        # 简单评估：我方连子数-对方连子数
-        my_count = self.count_consecutive(game, self.player_id)
-        opp_count = self.count_consecutive(game, 3 - self.player_id)
-        return my_count - opp_count
+        board = game.board
+        player = self.player_id
+        opponent = 2 if player == 1 else 1
+        board_size = game.board_size
+        center = board_size // 2
+        def count_n_in_a_row(board, player, n):
+            count = 0
+            for i in range(board_size):
+                for j in range(board_size):
+                    if board[i, j] != player:
+                        continue
+                    for dx, dy in [(1,0),(0,1),(1,1),(1,-1)]:
+                        c = 1
+                        for k in range(1, n):
+                            x, y = i+dx*k, j+dy*k
+                            if 0<=x<board_size and 0<=y<board_size and board[x, y]==player:
+                                c += 1
+                            else:
+                                break
+                        if c == n:
+                            # 检查两端是否被堵死
+                            x1, y1 = i-dx, j-dy
+                            x2, y2 = i+dx*n, j+dy*n
+                            blocked = 0
+                            if not (0<=x1<board_size and 0<=y1<board_size) or (board[x1, y1] != 0):
+                                blocked += 1
+                            if not (0<=x2<board_size and 0<=y2<board_size) or (board[x2, y2] != 0):
+                                blocked += 1
+                            if blocked < 2:
+                                count += 1
+            return count
+        def center_score(board, player):
+            score = 0
+            for i in range(board_size):
+                for j in range(board_size):
+                    if board[i, j] == player:
+                        score += max(7 - abs(i - center), 0) + max(7 - abs(j - center), 0)
+            return score
+        score = 0
+        score += 100000 * count_n_in_a_row(board, player, 5)
+        score += 10000 * count_n_in_a_row(board, player, 4)
+        score += 1000 * count_n_in_a_row(board, player, 3)
+        score += 10 * center_score(board, player)
+        score -= 10000 * count_n_in_a_row(board, opponent, 4)
+        score -= 1000 * count_n_in_a_row(board, opponent, 3)
+        return score
 
     def count_consecutive(self, game, player):
         board = game.board
