@@ -13,7 +13,7 @@ class Paddle:
         self.x = max(0, min(board_width - self.width, self.x + dx))
 
 class PongGame:
-    def __init__(self, width=600, height=400):
+    def __init__(self, width=750, height=500):  # 增加高度从400到500，占满整个窗口高度
         self.width, self.height = width, height
         self.reset()
         self.last_collision = None
@@ -21,8 +21,8 @@ class PongGame:
 
     def reset(self):
         self.ball = Ball(self.width//2, self.height//2, vx=3, vy=2)
-        self.paddle1 = Paddle(10, self.height//2 - 30)
-        self.paddle2 = Paddle(self.width-20, self.height//2 - 30)
+        self.paddle1 = Paddle(85, self.height//2 - 30)  # 从10调整到85，留出75像素左边距
+        self.paddle2 = Paddle(self.width-95, self.height//2 - 30)  # 从width-20调整到width-95，留出75像素右边距
         self.score1 = self.score2 = 0
         self.done = False
         self.last_collision = None
@@ -34,7 +34,7 @@ class PongGame:
         self.paddle1.move(action1*5, self.height)
         self.paddle2.move(action2*5, self.height)
         # 移除左右移动，球拍只能上下移动
-        self.ball.move(self.width, self.height)
+        self.ball.move(self.width, self.height, left_margin=75, right_margin=75)  # 传递左右边距参数
         self.ball.check_wall_collision(self.height)
         # 球拍碰撞
         if self.ball.vx < 0:
@@ -45,12 +45,12 @@ class PongGame:
             if self.ball.check_paddle_collision(self.paddle2):
                 self.ball.x = self.paddle2.x - self.ball.radius  # 防止穿透
                 self.last_collision = "paddle"
-        # 得分与重置
-        if self.ball.x < 0:
+        # 得分与重置（修改边界检测，球撞墙即得分）
+        if self.ball.x - self.ball.radius <= 75:  # 球碰到左墙
             self.score2 += 1
             self.serve_player = 1 if self.serve_player == 2 else 2  # 轮换发球
             self.reset_ball()
-        elif self.ball.x > self.width:
+        elif self.ball.x + self.ball.radius >= self.width - 75:  # 球碰到右墙
             self.score1 += 1
             self.serve_player = 1 if self.serve_player == 2 else 2  # 轮换发球
             self.reset_ball()

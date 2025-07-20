@@ -4,10 +4,11 @@ class Ball:
         self.vx, self.vy = vx, vy
         self.radius = radius
 
-    def move(self, board_width=None, board_height=None):
+    def move(self, board_width=None, board_height=None, left_margin=75, right_margin=75):
         self.x += self.vx
         self.y += self.vy
-        # 恢复经典Pong：不限制球的运动范围，碰到上下边界由check_wall_collision处理
+        # 移除左右边界反弹，让球可以撞墙得分
+        # 球的活动范围限制由游戏逻辑处理
 
     def check_wall_collision(self, height):
         if self.y - self.radius < 0 or self.y + self.radius > height:

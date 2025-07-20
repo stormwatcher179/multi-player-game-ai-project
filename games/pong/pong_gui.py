@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pygame
 from games.pong import PongEnv
+from agents.ai_bots.search_bot import SearchBot  # 添加SearchBot导入
 # 删除AI导入
 
 # 自动下载音效
@@ -47,8 +48,8 @@ pygame.init()
 env = PongEnv()
 state = env.reset()
 
-PANEL_WIDTH = 220
-WIDTH, HEIGHT = env.game.width + PANEL_WIDTH, env.game.height
+PANEL_WIDTH = 300  # 增加面板宽度从280到300，适应更宽的球桌
+WIDTH, HEIGHT = env.game.width + PANEL_WIDTH, env.game.height  # 移除+100，让球桌占满高度
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pong 双人对战")
 clock = pygame.time.Clock()
@@ -60,17 +61,17 @@ BTN_PAUSE_COLOR = (255, 204, 0)     # 橙黄色
 BTN_RESUME_COLOR = (0, 204, 102)    # 绿色
 BTN_QUIT_COLOR = (255, 102, 102)    # 红色
 
-# 按钮实例化
-btn_new = Button(rect=(WIDTH-200, 60, 180, 50), text="New Game", font=default_font, color=BTN_NEW_COLOR, text_color=(0,0,0))
-btn_pause = Button(rect=(WIDTH-200, 130, 180, 50), text="Pause", font=default_font, color=BTN_PAUSE_COLOR, text_color=(0,0,0))
-btn_quit = Button(rect=(WIDTH-200, 200, 180, 50), text="Quit", font=default_font, color=BTN_QUIT_COLOR, text_color=(0,0,0))
-# 删除模式选择按钮
+# 按钮实例化（调整位置，适应新的面板宽度）
+btn_new = Button(rect=(WIDTH-280, 60, 260, 50), text="New Game", font=default_font, color=BTN_NEW_COLOR, text_color=(0,0,0))
+btn_pause = Button(rect=(WIDTH-280, 130, 260, 50), text="Pause", font=default_font, color=BTN_PAUSE_COLOR, text_color=(0,0,0))
+btn_quit = Button(rect=(WIDTH-280, 200, 260, 50), text="Quit", font=default_font, color=BTN_QUIT_COLOR, text_color=(0,0,0))
+btn_ai = Button(rect=(WIDTH-280, 270, 260, 50), text="AI Mode", font=default_font, color=(150, 150, 150), text_color=(0,0,0))
 
-# 模式变量
-# MODE_HUMAN = "human"
-# MODE_AI = "ai"
-# game_mode = MODE_HUMAN  # 默认双人
-# ai_agent = SearchBot(player_id=2)
+# AI模式变量
+MODE_HUMAN = "human"
+MODE_AI = "ai"
+game_mode = MODE_HUMAN  # 默认双人
+ai_agent = SearchBot(player_id=2)  # AI控制玩家2
 
 paused = False
 game_over = False
@@ -98,6 +99,27 @@ while True:
             if btn_quit.rect.collidepoint(mouse_pos):
                 pygame.quit()
                 sys.exit(0)
+            if btn_ai.rect.collidepoint(mouse_pos):
+                if game_mode == MODE_HUMAN:
+                    game_mode = MODE_AI
+                    btn_ai.text = "Human Mode"
+                    btn_ai.color = (100, 200, 100)
+                    # 切换到AI模式时，重新开一局
+                    state = env.reset()
+                    paused = False
+                    game_over = False
+                    winner = None
+                    score_pause = 0
+                else:
+                    game_mode = MODE_HUMAN
+                    btn_ai.text = "AI Mode"
+                    btn_ai.color = (150, 150, 150)
+                    # 切换到人类模式时，重新开一局
+                    state = env.reset()
+                    paused = False
+                    game_over = False
+                    winner = None
+                    score_pause = 0
     # 玩家输入
     keys = pygame.key.get_pressed()
     action1 = 0
@@ -110,17 +132,29 @@ while True:
         action1_x = -1
     elif keys[pygame.K_d]:
         action1_x = 1
-    # 玩家2输入（始终为键盘控制）
-    action2 = 0
-    if keys[pygame.K_UP]:
-        action2 = -1
-    elif keys[pygame.K_DOWN]:
-        action2 = 1
-    action2_x = 0
-    if keys[pygame.K_LEFT]:
-        action2_x = -1
-    elif keys[pygame.K_RIGHT]:
-        action2_x = 1
+    # 玩家2输入（AI模式或键盘控制）
+    if game_mode == MODE_AI:
+        # AI控制玩家2
+        try:
+            observation = env.game.get_state()
+            action2 = ai_agent.get_action(observation, env)
+            action2_x = 0  # AI不进行左右移动
+        except Exception as e:
+            print(f"AI控制异常: {e}")
+            action2 = 0
+            action2_x = 0
+    else:
+        # 人类控制玩家2
+        action2 = 0
+        if keys[pygame.K_UP]:
+            action2 = -1
+        elif keys[pygame.K_DOWN]:
+            action2 = 1
+        action2_x = 0
+        if keys[pygame.K_LEFT]:
+            action2_x = -1
+        elif keys[pygame.K_RIGHT]:
+            action2_x = 1
 
     if not paused and not game_over:
         if score_pause > 0:
@@ -152,16 +186,16 @@ while True:
     # 分数
     font = pygame.font.SysFont(None, 36)
     score_text = font.render(f"{env.game.score1} : {env.game.score2}", True, (255,255,0))
-    screen.blit(score_text, (env.game.width+70, 10))
+    screen.blit(score_text, (env.game.width+110, 10))  # 调整分数位置，适应新面板宽度
     # 状态
     status = "Paused" if paused else ("Game Over" if game_over else ("Ready" if score_pause > 0 else "Playing"))
     status_text = font.render(f"状态: {status}", True, (255,255,255))
-    screen.blit(status_text, (env.game.width+30, 250))
+    screen.blit(status_text, (env.game.width+30, 350))  # 调整状态位置
     # 结果
     if game_over:
         winner_color = (0,255,0) if winner == 1 else (0,0,255)
         result_text = font.render(f"Winner: Player {winner}", True, winner_color)
-        screen.blit(result_text, (env.game.width+30, 300))
+        screen.blit(result_text, (env.game.width+30, 400))  # 调整结果位置
 
     # 按钮
     btn_new.draw(screen)
@@ -174,22 +208,25 @@ while True:
         btn_pause.color = BTN_PAUSE_COLOR
     btn_pause.draw(screen)
     btn_quit.draw(screen)
-    # 删除模式选择按钮高亮
+    btn_ai.draw(screen)  # 添加AI按钮绘制
 
     # 规则简述
     rule_font = pygame.font.SysFont(None, 24)
+    current_mode = "AI对战" if game_mode == MODE_AI else "双人对战"
     rules = [
         "规则简述：",
-        "当前模式: 双人对战",
+        f"当前模式: {current_mode}",
         "1. 玩家1: W/S控制上下",
-        "2. 玩家2: ↑/↓控制上下",
-        "3. 球碰到对方边界得分",
+        "2. 玩家2: ↑/↓控制上下" if game_mode == MODE_HUMAN else "2. 玩家2: AI自动控制",
+        "3. 球撞左右墙即得分",
         "4. 先得5分者获胜",
-        "5. 可随时暂停/重开/退出"
+        "5. 可随时暂停/重开/退出",
+        "6. 点击AI Mode切换模式",
+        "7. 球桌左右各留2cm边距"
     ]
     for i, line in enumerate(rules):
         txt = rule_font.render(line, True, (200,200,200))
-        screen.blit(txt, (env.game.width+20, 370 + i*28))
+        screen.blit(txt, (env.game.width+20, 470 + i*28))  # 调整规则说明位置
 
     # 进球后暂停提示
     if score_pause > 0:
